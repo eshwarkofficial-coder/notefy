@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Manage Timetable</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+</head>
+<body>
+  <h1>🗓 Admin – Timetable</h1>
+  {% with messages = get_flashed_messages() %}
+    {% if messages %}<div class="flash">{{ messages[0] }}</div>{% endif %}
+  {% endwith %}
+  <form method="POST">
+    <label>Day of week</label>
+    <select name="day_of_week" required>
+      <option value="0">Mon</option>
+      <option value="1">Tue</option>
+      <option value="2">Wed</option>
+      <option value="3">Thu</option>
+      <option value="4">Fri</option>
+      <option value="5">Sat</option>
+      <option value="6">Sun</option>
+    </select>
+    <label>Title</label><input name="title" required />
+    <label>Start</label><input type="time" name="start_time" required />
+    <label>End</label><input type="time" name="end_time" required />
+    <label>Teacher</label><input name="teacher" />
+    <label>Location</label><input name="location" />
+    <label>Notes</label><input name="notes" />
+    <button type="submit">Add Entry</button>
+  </form>
+
+  <h2>Existing Entries</h2>
+  <table>
+    <tr><th>Day</th><th>Time</th><th>Title</th><th>Teacher</th><th>Location</th><th>Notes</th><th>Delete</th></tr>
+    {% for e in entries %}
+    <tr>
+      <td>{{ ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"][e['day_of_week']] }}</td>
+      <td>{{ e['start_time'] }} - {{ e['end_time'] }}</td>
+      <td>{{ e['title'] }}</td>
+      <td>{{ e['teacher'] or '-' }}</td>
+      <td>{{ e['location'] or '-' }}</td>
+      <td>{{ e['notes'] or '' }}</td>
+      <td><a href="{{ url_for('timetable_delete', entry_id=e['id']) }}" onclick="return confirm('Delete entry?');">Delete</a></td>
+    </tr>
+    {% endfor %}
+  </table>
+
+  <p><a href="{{ url_for('admin_dashboard') }}">Back to Admin</a></p>
+</body>
+</html>

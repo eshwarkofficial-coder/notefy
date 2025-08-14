@@ -1,30 +1,28 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Admin Dashboard</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <meta charset="utf-8" />
+  <title>Admin</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
 </head>
 <body>
-    <h1>⚙ Admin Dashboard</h1>
-    <h2>Pending Teacher Approvals</h2>
-    {% if teachers %}
-    <table>
-        <tr>
-            <th>Name</th>
-            <th>Email</th>
-            <th>Approve</th>
-        </tr>
-        {% for t in teachers %}
-        <tr>
-            <td>{{ t[1] }}</td>
-            <td>{{ t[2] }}</td>
-            <td><a href="{{ url_for('approve_teacher', teacher_id=t[0]) }}">Approve</a></td>
-        </tr>
-        {% endfor %}
-    </table>
-    {% else %}
-        <p>No pending approvals.</p>
-    {% endif %}
-    <p><a href="{{ url_for('logout') }}">Logout</a></p>
+  <h1>⚙ Admin Dashboard</h1>
+  <p>
+    <a class="btn" href="{{ url_for('timetable_admin') }}">Manage Timetable</a>
+    <a class="btn" href="{{ url_for('logout') }}">Logout</a>
+  </p>
+  <h2>Pending Teacher Approvals</h2>
+  {% if teachers %}
+  <table>
+    <tr><th>Name</th><th>Email</th><th>Approve</th></tr>
+    {% for t in teachers %}
+    <tr>
+      <td>{{ t['name'] }}</td>
+      <td>{{ t['email'] }}</td>
+      <td><a href="{{ url_for('approve_teacher', teacher_id=t['id']) }}">Approve</a></td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}<p>No pending approvals.</p>{% endif %}
 </body>
 </html>

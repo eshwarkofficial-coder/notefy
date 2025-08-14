@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Weekly Timetable</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+</head>
+<body>
+  <h1>🗓 Weekly Timetable</h1>
+  <table>
+    <tr>
+      {% for d in days %}<th>{{ d.date }}</th>{% endfor %}
+    </tr>
+    <tr>
+      {% for day in range(7) %}
+      <td>
+        {% for e in week[day] %}
+          <div class="card">
+            <strong>{{ e['title'] }}</strong><br/>
+            {{ e['start_time'] }} - {{ e['end_time'] }}<br/>
+            {% if e['teacher'] %}👩‍🏫 {{ e['teacher'] }}<br/>{% endif %}
+            {% if e['location'] %}📍 {{ e['location'] }}<br/>{% endif %}
+            {% if e['notes'] %}<em>{{ e['notes'] }}</em>{% endif %}
+          </div>
+        {% endfor %}
+      </td>
+      {% endfor %}
+    </tr>
+  </table>
+  <p><a href="{{ url_for('index') }}">Back to Home</a></p>
+</body>
+</html>

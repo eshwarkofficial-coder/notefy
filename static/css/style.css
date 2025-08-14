@@ -1,0 +1,11 @@
+body{font-family:Arial,Helvetica,sans-serif;margin:20px;line-height:1.4}
+h1,h2{color:#333}
+nav a{margin-right:10px}
+table{width:100%;border-collapse:collapse;margin-top:12px}
+th,td{border:1px solid #ccc;padding:8px;vertical-align:top}
+th{background:#f7f7f7}
+input,select,button{padding:8px;margin:6px 4px}
+button,.btn{cursor:pointer;background:#222;color:#fff;border:none;border-radius:6px;padding:8px 12px;text-decoration:none}
+.flash{background:#fff7cc;border:1px solid #f0e3a1;padding:8px;margin:10px 0;border-radius:6px}
+.card{border:1px solid #ddd;border-radius:8px;padding:6px;margin:6px 0;background:#fafafa}
+.inline input{width:220px}

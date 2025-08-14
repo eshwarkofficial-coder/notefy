@@ -1,17 +1,21 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Teacher Registration</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <meta charset="utf-8" />
+  <title>Teacher Registration</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
 </head>
 <body>
-    <h1>👩‍🏫 Teacher Registration</h1>
-    <form method="POST">
-        <label>Name:</label><input type="text" name="name" required><br>
-        <label>Email:</label><input type="email" name="email" required><br>
-        <label>Password:</label><input type="password" name="password" required><br>
-        <button type="submit">Register</button>
-    </form>
-    <p><a href="{{ url_for('index') }}">Back to Home</a></p>
+  <h1>👩‍🏫 Teacher Registration</h1>
+  {% with messages = get_flashed_messages() %}
+    {% if messages %}<div class="flash">{{ messages[0] }}</div>{% endif %}
+  {% endwith %}
+  <form method="POST">
+    <label>Name</label><input name="name" required />
+    <label>Email</label><input type="email" name="email" required />
+    <label>Password</label><input type="password" name="password" required />
+    <button type="submit">Register</button>
+  </form>
+  <p><a href="{{ url_for('index') }}">Back to Home</a></p>
 </body>
 </html>
