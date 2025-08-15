@@ -1,27 +1,121 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Upload</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+  <title>Upload File</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #4B9CD3; /* Carolina Blue */
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      color: white;
+    }
+    h1 {
+      margin-top: 30px;
+      font-size: 2rem;
+      text-align: center;
+    }
+    .flash {
+      background-color: rgba(255, 255, 255, 0.2);
+      padding: 10px;
+      border-radius: 5px;
+      margin: 15px auto;
+      max-width: 400px;
+      text-align: center;
+      font-size: 1rem;
+    }
+    form {
+      background-color: white;
+      color: black;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+      width: 90%;
+      max-width: 400px;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+    label {
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    input, select, button {
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      font-size: 1rem;
+    }
+    button {
+      background-color: #4B9CD3;
+      color: white;
+      border: none;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+    button:hover {
+      background-color: #3A8BC2;
+    }
+    p {
+      margin: 10px 0 30px;
+      font-size: 0.95rem;
+    }
+    a {
+      color: white;
+      text-decoration: underline;
+    }
+    a:hover {
+      color: #dcefff;
+    }
+    @media (max-width: 500px) {
+      h1 {
+        font-size: 1.5rem;
+      }
+      form {
+        padding: 15px;
+      }
+    }
+  </style>
 </head>
 <body>
   <h1>📤 Upload File</h1>
   {% with messages = get_flashed_messages() %}
-    {% if messages %}<div class="flash">{{ messages[0] }}</div>{% endif %}
+    {% if messages %}
+      <div class="flash">{{ messages[0] }}</div>
+    {% endif %}
   {% endwith %}
+  
   <form method="POST" enctype="multipart/form-data">
-    <label>Subject</label><input name="subject" />
-    <label>Folder</label>
-    <select name="folder_id">
-      <option value="">-- none --</option>
-      {% for f in folders %}
-        <option value="{{ f['id'] }}">{{ f['name'] }}</option>
-      {% endfor %}
-    </select>
-    <label>Choose File</label><input type="file" name="file" required />
+    <div>
+      <label>Subject</label>
+      <input name="subject" />
+    </div>
+    <div>
+      <label>Folder</label>
+      <select name="folder_id">
+        <option value="">-- none --</option>
+        {% for f in folders %}
+          <option value="{{ f['id'] }}">{{ f['name'] }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label>Choose File</label>
+      <input type="file" name="file" required />
+    </div>
     <button type="submit">Upload</button>
   </form>
-  <p><a href="{{ url_for('teacher_files') }}">Back to My Files</a> | <a href="{{ url_for('logout') }}">Logout</a></p>
+  
+  <p>
+    <a href="{{ url_for('teacher_files') }}">Back to My Files</a> | 
+    <a href="{{ url_for('logout') }}">Logout</a>
+  </p>
 </body>
 </html>
+
