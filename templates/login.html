@@ -2,6 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Login - NOTEFY</title>
   <style>
     body {
@@ -22,6 +23,11 @@
       font-size: 32px;
       font-weight: 700;
       text-shadow: 1px 2px 4px rgba(0,0,0,0.2);
+    }
+	h3 {
+      color: white;
+     
+      
     }
 
     form {
@@ -76,15 +82,7 @@
       box-shadow: 0px 5px 15px rgba(0,0,0,0.1);
     }
 
-    .flash {
-      background-color: rgba(255, 0, 0, 0.85);
-      color: white;
-      padding: 10px;
-      border-radius: 8px;
-      margin-bottom: 15px;
-      text-align: center;
-      font-size: 14px;
-    }
+    
 
     a {
       margin-top: 20px;
@@ -103,15 +101,29 @@
       from { opacity: 0; transform: translateY(-15px); }
       to { opacity: 1; transform: translateY(0); }
     }
+	.mutelink { display:block; text-align:center; margin-top:12px; color:#fff; text-decoration:none; }
+    .mutelink:hover { text-decoration:underline; }
+	
+	.diacard {
+      width: 360px;
+	  max-width: 90%;
+      background:linear-gradient(90deg,#64C4FF ,#357abd);
+	padding :24px 32px;
+     border-radius:12px;
+	 border: 1px solid rgba(0, 255, 0,0.2);
+	 box-shadow: 0 8px 30px rgba(255, 255, 255, 0.2);
+      transform-style: preserve-3d;
+      perspective: 1000px;
+	  animation: fadeIn 1s ease;
+	 
+    }
   </style>
 </head>
 <body>
 
-  <h1>🔑 Welcome to NOTEFY</h1>
+  <h1> Welcome to NOTEFY</h1>
 
-  {% with messages = get_flashed_messages() %}
-    {% if messages %}<div class="flash">{{ messages[0] }}</div>{% endif %}
-  {% endwith %}
+  
 
   <form method="POST">
     <label>Role</label>
@@ -129,6 +141,11 @@
     <button type="submit">Login</button>
   </form>
 
-  <a href="{{ url_for('index') }}">← Back to Home</a>
+ <a class="mutelink" href="{{ url_for('index') }}">← Back to Home</a>
 </body>
+<script src="{{ url_for('static',filename='js/dialog.js')}}"></script>
+<script>
+const msgs = {{ get_flashed_messages() | tojson }};
+msgs.forEach(m => { alertCustom(m);});
+</script>
 </html>

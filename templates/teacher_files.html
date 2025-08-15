@@ -3,13 +3,42 @@
 <head>
   <meta charset="utf-8" />
   <title>My Folders & Files</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+ 
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}" />
+  <style>
+  .diacard {
+      width: 360px;
+	  max-width: 90%;
+      background:linear-gradient(90deg,#64C4FF ,#357abd);
+	padding :24px 32px;
+     border-radius:12px;
+	 border: 1px solid rgba(0, 255, 0,0.2);
+	 box-shadow: 0 8px 30px rgba(255, 255, 255, 0.2);
+      transform-style: preserve-3d;
+      perspective: 1000px;
+	  animation: fadeIn 1s ease;
+	 
+    }
+	h3 {
+      color: white;
+     
+      
+    }
+  </style>
 </head>
 <body>
-  <h1>👋 Hello, {{ session['teacher_name'] }} </h1>
-  {% with messages = get_flashed_messages() %}
-    {% if messages %}<div class="flash">{{ messages[0] }}</div>{% endif %}
-  {% endwith %}
+<header>
+    <div class="brand">
+      <div class="logo">
+        <img src="{{ url_for('static', filename='images/cat.png') }}" alt="Cat Logo">
+      </div>
+       <h1> Hello, {{ session['teacher_name'] }} </h1>
+    </div>
+  <nav>
+  <a href="{{ url_for('logout') }}">Logout</a></nav>
+  </header>
+ 
+  
 
   <section>
     <h2>Folders</h2>
@@ -64,6 +93,11 @@
     {% endif %}
   </section>
 
-  <p><a href="{{ url_for('logout') }}">Logout</a></p>
+  
 </body>
+<script src="{{ url_for('static',filename='js/dialog.js')}}"></script>
+<script>
+const msgs = {{ get_flashed_messages() | tojson }};
+msgs.forEach(m => { alertCustom(m);});
+</script>
 </html>

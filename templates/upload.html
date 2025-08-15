@@ -81,15 +81,29 @@
         padding: 15px;
       }
     }
+	.diacard {
+      width: 360px;
+	  max-width: 90%;
+      background:linear-gradient(90deg,#64C4FF ,#357abd);
+	padding :24px 32px;
+     border-radius:12px;
+	 border: 1px solid rgba(0, 255, 0,0.2);
+	 box-shadow: 0 8px 30px rgba(255, 255, 255, 0.2);
+      transform-style: preserve-3d;
+      perspective: 1000px;
+	  animation: fadeIn 1s ease;
+	 
+    }
+	h3 {
+      color: white;
+     
+      
+    }
   </style>
 </head>
 <body>
   <h1>📤 Upload File</h1>
-  {% with messages = get_flashed_messages() %}
-    {% if messages %}
-      <div class="flash">{{ messages[0] }}</div>
-    {% endif %}
-  {% endwith %}
+  
   
   <form method="POST" enctype="multipart/form-data">
     <div>
@@ -117,5 +131,10 @@
     <a href="{{ url_for('logout') }}">Logout</a>
   </p>
 </body>
+<script src="{{ url_for('static',filename='js/dialog.js')}}"></script>
+<script>
+const msgs = {{ get_flashed_messages() | tojson }};
+msgs.forEach(m => { alertCustom(m);});
+</script>
 </html>
 

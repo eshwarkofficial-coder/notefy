@@ -3,10 +3,20 @@
 <head>
   <meta charset="utf-8" />
   <title>Weekly Timetable</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}" />
 </head>
 <body>
-  <h1>🗓 Weekly Timetable</h1>
+<header>
+    <div class="brand">
+      <div class="logo">
+        <img src="{{ url_for('static', filename='images/cat.png') }}" alt="Cat Logo">
+      </div>
+      <h1> Weekly Timetable</h1>
+    </div>
+	<nav>
+	<a href="{{ url_for('index') }}">Back to Home</a></nav>
+  </header>
+  
   <table>
     <tr>
       {% for d in days %}<th>{{ d.date }}</th>{% endfor %}
@@ -27,6 +37,6 @@
       {% endfor %}
     </tr>
   </table>
-  <p><a href="{{ url_for('index') }}">Back to Home</a></p>
+  
 </body>
 </html>

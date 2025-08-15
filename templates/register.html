@@ -9,12 +9,12 @@
     body.page { margin:0; font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
       background: linear-gradient(135deg,var(--blue),var(--blue2));
       min-height:100dvh; display:flex; align-items:center; justify-content:center; padding:16px; }
-    .card { width:100%; max-width:420px; background:#fff; border-radius:14px; padding:24px;
+    .card { width:100%; max-width:420px; background:#fff; border-radius:14px; padding:10px;
       box-shadow:0 10px 30px rgba(0,0,0,.15); }
     .title { margin:0 0 16px; font-size:1.75rem; color:#0f2940; text-align:center; }
     .flash { background:rgba(255,77,77,.95); color:#fff; padding:10px 12px; border-radius:10px; margin:0 0 14px; }
     .label { display:block; margin-top:12px; font-weight:600; font-size:.95rem; color:#2b2b2b; }
-    .input { width:100%; margin-top:6px; padding:12px; font-size:1rem; border-radius:10px; border:1.5px solid #d6dce1;
+    .input { width:90%; margin-top:6px; padding:12px; font-size:1rem; border-radius:10px; border:1.5px solid #d6dce1;
       transition:border-color .2s, box-shadow .2s; }
     .input:focus { outline:none; border-color:var(--blue); box-shadow:0 0 0 4px rgba(75,156,211,.25); }
     .btn { width:100%; margin-top:18px; padding:12px 14px; border:none; border-radius:10px; background:var(--blue);
@@ -23,15 +23,31 @@
     .mutelink { display:block; text-align:center; margin-top:12px; color:#fff; text-decoration:none; }
     .mutelink:hover { text-decoration:underline; }
     @media (min-width:600px){ .card{padding:28px;} }
+	.diacard {
+      width: 360px;
+	  max-width: 90%;
+      background:linear-gradient(90deg,#64C4FF ,#357abd);
+	padding :24px 32px;
+     border-radius:12px;
+	 border: 1px solid rgba(0, 255, 0,0.2);
+	 box-shadow: 0 8px 30px rgba(255, 255, 255, 0.2);
+      transform-style: preserve-3d;
+      perspective: 1000px;
+	  animation: fadeIn 1s ease;
+	 
+    }
+	h3 {
+      color: white;
+     
+      
+    }
   </style>
 </head>
 <body class="page page--register">
   <div class="card">
-    <h1 class="title">📚 Teacher Registration</h1>
+    <h1 class="title">Teacher Registration</h1>
 
-    {% with messages = get_flashed_messages() %}
-      {% if messages %}<div class="flash">{{ messages[0] }}</div>{% endif %}
-    {% endwith %}
+    
 
     <form method="POST" novalidate>
       <label class="label">Name</label>
@@ -49,5 +65,10 @@
     <a class="mutelink" href="{{ url_for('index') }}">← Back to Home</a>
   </div>
 </body>
+<script src="{{ url_for('static',filename='js/dialog.js')}}"></script>
+<script>
+const msgs = {{ get_flashed_messages() | tojson }};
+msgs.forEach(m => { alertCustom(m);});
+</script>
 </html>
 
