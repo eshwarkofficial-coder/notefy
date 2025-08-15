@@ -62,7 +62,7 @@
               <button type="submit">Rename</button>
             </form>
           </td>
-          <td><p><a class="btn" href="{{ url_for('folder_delete', folder_id=f['id']) }}" onclick="return confirm('Delete folder? Make sure it is empty.');">Delete</a></p></td>
+          <td><p><a class="btn" href="{{ url_for('folder_delete', folder_id=f['id']) }}" onclick="return true">Delete</a></p></td>
         </tr>
         {% endfor %}
       </table>
@@ -85,8 +85,8 @@
         <td>{{ f['folder_name'] or '-' }}</td>
         <td>{{ f['upload_date'] }}</td>
         <td>
-          <p><a class="btn" href="{{ url_for('download_file', filename=f['file_path']) }}">Download</a></p>
-          <p><a class="btn" href="{{ url_for('file_delete', file_id=f['id']) }}" onclick="return confirm('Delete this file?');">Delete</a></p>
+        
+          <p><a class="btn" href="{{ url_for('file_delete', file_id=f['id']) }}" onclick="return true">Delete</a></p>
         </td>
       </tr>
       {% endfor %}
@@ -102,5 +102,7 @@
 <script>
 const msgs = {{ get_flashed_messages() | tojson }};
 msgs.forEach(m => { alertCustom(m);});
+
+
 </script>
 </html>

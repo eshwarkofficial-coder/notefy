@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 app = Flask(__name__)
 app.secret_key = "supersecretkey-change-me"  # change in production
 
-UPLOAD_FOLDER = "uploads"
+UPLOAD_FOLDER = "upload"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 ALLOWED_EXTENSIONS = {"pdf", "docx", "pptx", "txt", "xlsx", "zip", "png", "jpg"}
@@ -137,7 +137,7 @@ def index():
     conn.close()
     return render_template("index.html", files=files)
 
-@app.route("/uploads/<path:filename>")
+@app.route("/upload/<path:filename>")
 def download_file(filename):
     return send_from_directory(app.config["UPLOAD_FOLDER"], filename, as_attachment=True)
 
@@ -404,7 +404,7 @@ def upload():
             file.save(save_path)
 
             # store relative path from uploads/
-            rel_path = os.path.relpath(save_path, app.config["UPLOAD_FOLDER"])
+            rel_path = os.path.relpath(save_path, app.config["UPLOAD_FOLDER"]).replace(os.sep, '/')
 
             conn = get_db()
             c = conn.cursor()

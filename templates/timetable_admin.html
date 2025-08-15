@@ -68,7 +68,7 @@
       <td>{{ e['teacher'] or '-' }}</td>
       <td>{{ e['location'] or '-' }}</td>
       <td>{{ e['notes'] or '' }}</td>
-      <td><p><a class="btn" href="{{ url_for('timetable_delete', entry_id=e['id']) }}" onclick="return confirm('Delete entry?');">Delete</a></p></td>
+      <td><p><a class="btn" href="{{ url_for('timetable_delete', entry_id=e['id']) }}" onclick="return true">Delete</a></p></td>
     </tr>
     {% endfor %}
   </table>

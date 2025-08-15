@@ -8,7 +8,7 @@
     :root { --blue:#4B9CD3; --blue2:#6CB4E4; }
     body.page { margin:0; font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
       background: linear-gradient(135deg,var(--blue),var(--blue2));
-      min-height:100dvh; display:flex; align-items:center; justify-content:center; padding:16px; }
+      min-height:100dvh;  align-items:center; justify-content:center; padding:16px; }
     .card { width:100%; max-width:420px; background:#fff; border-radius:14px; padding:10px;
       box-shadow:0 10px 30px rgba(0,0,0,.15); }
     .title { margin:0 0 16px; font-size:1.75rem; color:#0f2940; text-align:center; }
@@ -40,15 +40,43 @@
      
       
     }
+	.cat-container {
+    position: relative;
+    width: 200px; /* match your image size */
+    height: 200px;
+}
+
+.cat {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: auto;
+    transition: opacity 0.2s ease; 
+}
+
+
+#cat-open { opacity: 1; }
+#cat-closed { opacity: 0; }
+
   </style>
 </head>
-<body class="page page--register">
+<body class="page page--register" style="display:block;">
+<center>
+<div class="cat-container">
+    <img src="{{ url_for('static', filename='images/cat-open.png') }}" id="cat-open" class="cat">
+    <img src="{{ url_for('static', filename='images/cat-closed.png') }}" id="cat-closed" class="cat">
+</div>
+
+
+
   <div class="card">
-    <h1 class="title">Teacher Registration</h1>
+    
 
     
 
     <form method="POST" novalidate>
+	
       <label class="label">Name</label>
       <input class="input" name="name" placeholder="Full name" required>
 
@@ -56,18 +84,34 @@
       <input class="input" type="email" name="email" placeholder="you@school.edu" required>
 
       <label class="label">Password</label>
-      <input class="input" type="password" name="password" placeholder="Create a password" required>
+      <input class="input" type="password" name="password" id="password" placeholder="Create a password" required>
 
       <button class="btn" type="submit">Register</button>
     </form>
 
-    <a class="mutelink" href="{{ url_for('index') }}">← Back to Home</a>
+   
   </div>
+  </center>
 </body>
 <script src="{{ url_for('static',filename='js/dialog.js')}}"></script>
 <script>
 const msgs = {{ get_flashed_messages() | tojson }};
 msgs.forEach(m => { alertCustom(m);});
+
+const passwordInput = document.getElementById('password');
+const catOpen = document.getElementById('cat-open');
+const catClosed = document.getElementById('cat-closed');
+
+passwordInput.addEventListener('focus', () => {
+    catOpen.style.opacity = '0';   
+    catClosed.style.opacity = '1'; 
+});
+
+passwordInput.addEventListener('blur', () => {
+    catOpen.style.opacity = '1';   
+    catClosed.style.opacity = '0'; 
+});
+
 </script>
 </html>
 
