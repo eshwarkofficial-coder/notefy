@@ -1,41 +1,270 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Notes Library</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+  <title>Notefy</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;600;800&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --blue-1: #64C4FF;
+      --blue-2: #357abd;
+      --muted: #f4f8fc;
+      --card: #ffffff;
+      --text: #1c2b3a;
+      --accent: #2a6bbf;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Nunito', sans-serif;
+      margin: 0;
+      background: linear-gradient(180deg, #f4f8fc 0%, #e9f1fa 100%);
+      color: var(--text);
+    }
+
+    /* Header */
+    header {
+      background: linear-gradient(90deg, var(--blue-1) 5% , var(--blue-2) );
+      color: white;
+      padding: 18px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+	  background:transparent;
+      gap: 12px;
+    }
+    .logo {
+      width: 60px; height: 60px;
+      border-radius: 12px;
+      background: transparent;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    .logo img { width: 100%; height: 100%; object-fit: contain; }
+    header h1 { font-size: 1.1rem; margin: 0; font-weight: 800; }
+    nav { display: flex; gap: 8px; flex-wrap: wrap; }
+    nav a {
+      color: white;
+      text-decoration: none;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-weight: 700;
+      background: rgba(255,255,255,0.1);
+    }
+    nav a:hover { background: rgba(255,255,255,0.2); }
+
+    main { padding: 20px; max-width: 1200px; margin: auto; }
+
+    /* Folder Grid */
+    .folder-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+    }
+    .folder-card {
+      background: var(--card);
+      border-radius: 16px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+      padding: 16px;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .folder-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 22px rgba(0,0,0,0.08);
+    }
+    .folder-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .folder-name {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 800;
+      color: var(--accent);
+    }
+    .folder-badge {
+      background: var(--muted);
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    /* Hidden file list */
+    .file-list {
+      list-style: none;
+      padding: 0;
+      margin: 12px 0 0;
+      display: none;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .file-item {
+      background: var(--muted);
+      border-radius: 8px;
+      padding: 8px 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .file-item a {
+      background: var(--blue-1);
+      color: white;
+      padding: 4px 8px;
+      border-radius: 6px;
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 0.85rem;
+    }
+    .file-item a:hover {
+      background: var(--blue-2);
+    }
+
+    /* Loader */
+    #loading-screen {
+      position: fixed;
+      inset: 0;
+      background: rgba(53,122,189,0.95);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 12px;
+      z-index: 9999;
+      color: white;
+    }
+    .loader-book { width: 80px; height: 100px; position: relative; perspective: 800px; }
+    .loader-book .page {
+      position: absolute;
+      top: 0; left: 0;
+	  color:black;
+	  padding:25px;
+	  justify-content:center;
+      width: 80px; height: 100px;
+      background: white;
+      transform-origin: left center;
+
+      animation: pageFlip 1.2s infinite ease-in-out;
+    }
+    .loader-book .page:nth-child(2) { animation-delay: 0.15s; }
+    .loader-book .page:nth-child(3) { animation-delay: 0.3s; }
+	.loader-book .page:nth-child(4) { animation-delay: 0.45s; }
+	.loader-book .page:nth-child(6) { animation-delay: 0.6s; }
+	.loader-book .page:nth-child(7) { animation-delay: 0.75s; }
+	.loader-book .page:nth-child(8) { animation-delay: 0.8s; }
+	.loader-book .page:nth-child(9) { animation-delay: 0.95s; }
+	.loader-book .page:nth-child(10) { animation-delay: 1.05s; }
+	.loader-book .page:nth-child(11) { animation-delay: 1.20s; }
+	.loader-book .page:nth-child(12) { animation-delay: 1.35s; }
+	.loader-book .page:nth-child(13) { animation-delay: 1.50s; }
+	.loader-book .page:nth-child(14) { animation-delay: 1.65s; }
+
+    @keyframes pageFlip {
+      0% { transform: rotateY(0deg); }
+	  50%{ transform: rotateY(-95deg); }
+      100% { transform: rotateY(-180deg); }
+     
+    }
+
+    @media (max-width: 600px) {
+      header { padding: 12px; }
+      .folder-grid { grid-template-columns: 1fr; }
+    }
+  </style>
 </head>
 <body>
+  <!-- Loading Screen -->
+  <div id="loading-screen">
+    <div class="loader-book">
+      <div class="page"></div>
+      <div class="page"></div>
+      <div class="page"></div>
+	  <div class="page"></div>
+	  <div class="page"></div>
+	  <div class="page"></div>
+	  <div class="page"></div>
+	  <div class="page"></div>
+	  <div class="page"></div>
+	  <div class="page"></div>
+	  <div class="page"></div>
+	  <div class="page"></div>
+	  
+    </div>
+    
+  </div>
+
   <header>
-    <h1>📚 Notes Library</h1>
+    <div class="brand">
+      <div class="logo">
+        <img src="{{ url_for('static', filename='images/cat.png') }}" alt="Cat Logo">
+      </div>
+      <h1>Notefy</h1>
+    </div>
     <nav>
-      <a href="{{ url_for('timetable_public') }}">View Timetable</a>
+      <a href="{{ url_for('timetable_public') }}">Timetable</a>
       <a href="{{ url_for('register') }}">Teacher Register</a>
       <a href="{{ url_for('login') }}">Login</a>
     </nav>
   </header>
 
-  <section>
-    <h2>Latest Files</h2>
+  <main>
     {% if files %}
-    <table>
-      <tr>
-        <th>File</th><th>Subject</th><th>Folder</th><th>Teacher</th><th>Uploaded</th><th>Download</th>
-      </tr>
-      {% for f in files %}
-      <tr>
-        <td>{{ f['file_name'] }}</td>
-        <td>{{ f['subject'] or '-' }}</td>
-        <td>{{ f['folder_name'] or '-' }}</td>
-        <td>{{ f['teacher_name'] or '-' }}</td>
-        <td>{{ f['upload_date'] }}</td>
-        <td><a href="{{ url_for('download_file', filename=f['file_path']) }}">Download</a></td>
-      </tr>
+    {% set sorted_files = files|sort(attribute='folder_name') %}
+    <div class="folder-grid">
+      {% for group in sorted_files|groupby('folder_name') %}
+      {% set folder_name = group.grouper or 'Unsorted' %}
+      <div class="folder-card" onclick="toggleFiles(this)">
+        <div class="folder-head">
+          <div class="folder-name">📁 {{ folder_name }}</div>
+          <div class="folder-badge">{{ group.list|length }} files</div>
+        </div>
+        <ul class="file-list">
+          {% for f in group.list %}
+          <li class="file-item">
+            <span>{{ f['file_name'] }}</span>
+            <a href="{{ url_for('download_file', filename=f['file_path']) }}">⬇</a>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
       {% endfor %}
-    </table>
+    </div>
     {% else %}
       <p>No files yet.</p>
     {% endif %}
-  </section>
+  </main>
+
+  <script>
+    window.addEventListener('load', () => {
+	
+  setTimeout(() => {
+    document.getElementById('loading-screen').style.display = 'none';
+    
+  }, 5100);
+      
+    });
+
+    function toggleFiles(card) {
+      const list = card.querySelector('.file-list');
+      const isVisible = list.style.display === 'flex';
+      document.querySelectorAll('.file-list').forEach(el => el.style.display = 'none');
+      if (!isVisible) {
+        list.style.display = 'flex';
+      }
+    }
+  </script>
 </body>
 </html>
