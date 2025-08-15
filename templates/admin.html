@@ -112,11 +112,12 @@
       </div>
       <h1> Admin Dashboard</h1>
     </div>
-  
+	<nav>
+	 <a href="{{ url_for('logout') }}"> Logout</a></nav>
   </header>
   <p>
-    <a class="btn" href="{{ url_for('timetable_admin') }}">📅 Manage Timetable</a>
-    <a class="btn" href="{{ url_for('logout') }}">🚪 Logout</a>
+    <a class="btn" href="{{ url_for('timetable_admin') }}"> Manage Timetable</a>
+    
   </p>
 
   <h2>Pending Teacher Approvals</h2>
@@ -127,7 +128,7 @@
     <div class="card">
       <h3>{{ t['name'] }}</h3>
       <p><strong>Email:</strong> {{ t['email'] }}</p>
-      <a class="approve-btn" href="{{ url_for('approve_teacher', teacher_id=t['id']) }}">Approve ✅</a>
+      <a class="approve-btn" href="{{ url_for('approve_teacher', teacher_id=t['id']) }}">Approve</a>
     </div>
     {% endfor %}
   </div>

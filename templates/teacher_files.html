@@ -41,12 +41,14 @@
   
 
   <section>
+  <center>
+	<div class="card">
     <h2>Folders</h2>
     <form method="POST" action="{{ url_for('folder_create') }}" class="inline">
       <input name="name" placeholder="New folder name" required />
       <button type="submit">Create Folder</button>
     </form>
-
+	</div>
     {% if folders %}
       <table>
         <tr><th>Name</th><th>Created</th><th>Rename</th><th>Delete</th></tr>
@@ -60,7 +62,7 @@
               <button type="submit">Rename</button>
             </form>
           </td>
-          <td><a href="{{ url_for('folder_delete', folder_id=f['id']) }}" onclick="return confirm('Delete folder? Make sure it is empty.');">Delete</a></td>
+          <td><p><a class="btn" href="{{ url_for('folder_delete', folder_id=f['id']) }}" onclick="return confirm('Delete folder? Make sure it is empty.');">Delete</a></p></td>
         </tr>
         {% endfor %}
       </table>
@@ -68,8 +70,9 @@
       <p>No folders yet.</p>
     {% endif %}
   </section>
-
-  <section>
+	<center>
+  <section class="card" >
+  
     <h2>My Files</h2>
     <p><a class="btn" href="{{ url_for('upload') }}">Upload a New File</a></p>
     {% if files %}
@@ -82,8 +85,8 @@
         <td>{{ f['folder_name'] or '-' }}</td>
         <td>{{ f['upload_date'] }}</td>
         <td>
-          <a href="{{ url_for('download_file', filename=f['file_path']) }}">Download</a> |
-          <a href="{{ url_for('file_delete', file_id=f['id']) }}" onclick="return confirm('Delete this file?');">Delete</a>
+          <p><a class="btn" href="{{ url_for('download_file', filename=f['file_path']) }}">Download</a></p>
+          <p><a class="btn" href="{{ url_for('file_delete', file_id=f['id']) }}" onclick="return confirm('Delete this file?');">Delete</a></p>
         </td>
       </tr>
       {% endfor %}

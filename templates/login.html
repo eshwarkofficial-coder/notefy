@@ -101,8 +101,7 @@
       from { opacity: 0; transform: translateY(-15px); }
       to { opacity: 1; transform: translateY(0); }
     }
-	.mutelink { display:block; text-align:center; margin-top:12px; color:#fff; text-decoration:none; }
-    .mutelink:hover { text-decoration:underline; }
+	@media (min-width:600px){ .card{padding:28px;} }
 	
 	.diacard {
       width: 360px;
@@ -141,7 +140,7 @@
     <button type="submit">Login</button>
   </form>
 
- <a class="mutelink" href="{{ url_for('index') }}">← Back to Home</a>
+ 
 </body>
 <script src="{{ url_for('static',filename='js/dialog.js')}}"></script>
 <script>

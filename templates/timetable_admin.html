@@ -36,8 +36,8 @@
 	<nav>
   <a href="{{ url_for('admin_dashboard') }}">Back to Admin</a></nav>
   </header>
- 
-  <form method="POST">
+ <center>
+  <form method="POST" class="card">
     <label>Day of week</label>
     <select name="day_of_week" required>
       <option value="0">Mon</option>
@@ -48,12 +48,12 @@
       <option value="5">Sat</option>
       <option value="6">Sun</option>
     </select>
-    <label>Title</label><input name="title" required />
+    <label>Title</label><input name="title" required /><br>
     <label>Start</label><input type="time" name="start_time" required />
-    <label>End</label><input type="time" name="end_time" required />
-    <label>Teacher</label><input name="teacher" />
-    <label>Location</label><input name="location" />
-    <label>Notes</label><input name="notes" />
+    <label>End</label><input type="time" name="end_time" required /><br>
+    <label>Teacher</label><input name="teacher" /><br>
+    <label>Location</label><input name="location" /><br>
+    <label>Notes</label><input name="notes" /> <br>
     <button type="submit">Add Entry</button>
   </form>
 
@@ -68,7 +68,7 @@
       <td>{{ e['teacher'] or '-' }}</td>
       <td>{{ e['location'] or '-' }}</td>
       <td>{{ e['notes'] or '' }}</td>
-      <td><a href="{{ url_for('timetable_delete', entry_id=e['id']) }}" onclick="return confirm('Delete entry?');">Delete</a></td>
+      <td><p><a class="btn" href="{{ url_for('timetable_delete', entry_id=e['id']) }}" onclick="return confirm('Delete entry?');">Delete</a></p></td>
     </tr>
     {% endfor %}
   </table>
