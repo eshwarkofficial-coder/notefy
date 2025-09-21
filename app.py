@@ -1,101 +1,32 @@
-from flask import Flask, render_template, request, redirect, url_for, send_from_directory, session, flash
+from flask import Flask, render_template, request, redirect, url_for, send_from_directory, session, flash, Response
 import os
-import sqlite3
 from werkzeug.utils import secure_filename
 from datetime import datetime, timedelta
+from supabase import create_client, Client
+from dotenv import load_dotenv
+import io
+
+
+load_dotenv()
 
 app = Flask(__name__)
-app.secret_key = "supersecretkey-change-me"  # change in production
+app.secret_key = os.getenv("SECRET_KEY", "supersecretkey-change-me")
 
 UPLOAD_FOLDER = "upload"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
+
 ALLOWED_EXTENSIONS = {"pdf", "docx", "pptx", "txt", "xlsx", "zip", "png", "jpg"}
 
-# ---------------- Database ----------------
 
-def get_db():
-    conn = sqlite3.connect("database.db")
-    conn.row_factory = sqlite3.Row
-    return conn
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 
-def init_db():
-    conn = get_db()
-    c = conn.cursor()
+if not SUPABASE_URL or not SUPABASE_KEY:
+    raise ValueError("Please set SUPABASE_URL and SUPABASE_KEY in your .env file")
 
-    # teachers
-    c.execute(
-        """CREATE TABLE IF NOT EXISTS teachers (
-               id INTEGER PRIMARY KEY AUTOINCREMENT,
-               name TEXT,
-               email TEXT UNIQUE,
-               password TEXT,
-               status TEXT DEFAULT 'pending'
-           )"""
-    )
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-    # folders (owned by teacher; can be nested with parent_id)
-    c.execute(
-        """CREATE TABLE IF NOT EXISTS folders (
-               id INTEGER PRIMARY KEY AUTOINCREMENT,
-               name TEXT NOT NULL,
-               parent_id INTEGER,
-               owner_id INTEGER NOT NULL,
-               created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-               FOREIGN KEY(owner_id) REFERENCES teachers(id)
-           )"""
-    )
-
-    # files (linked to folder_id)
-    c.execute(
-        """CREATE TABLE IF NOT EXISTS files (
-               id INTEGER PRIMARY KEY AUTOINCREMENT,
-               file_name TEXT,
-               file_path TEXT,
-               uploader_id INTEGER,
-               folder_id INTEGER,
-               subject TEXT,
-               upload_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-               FOREIGN KEY(uploader_id) REFERENCES teachers(id),
-               FOREIGN KEY(folder_id) REFERENCES folders(id)
-           )"""
-    )
-
-    # admin
-    c.execute(
-        """CREATE TABLE IF NOT EXISTS admin (
-               id INTEGER PRIMARY KEY AUTOINCREMENT,
-               username TEXT UNIQUE,
-               password TEXT
-           )"""
-    )
-
-    # timetable (weekly recurring)
-    # day_of_week: 0=Mon .. 6=Sun; times in HH:MM 24h
-    c.execute(
-        """CREATE TABLE IF NOT EXISTS timetable (
-               id INTEGER PRIMARY KEY AUTOINCREMENT,
-               day_of_week INTEGER NOT NULL,
-               title TEXT NOT NULL,
-               start_time TEXT NOT NULL,
-               end_time TEXT NOT NULL,
-               teacher TEXT,
-               location TEXT,
-               notes TEXT
-           )"""
-    )
-
-    # default admin
-    c.execute(
-        "INSERT OR IGNORE INTO admin (id, username, password) VALUES (1, 'admin', 'admin123')"
-    )
-
-    conn.commit()
-    conn.close()
-
-init_db()
-
-# ---------------- Helpers ----------------
 
 def allowed_file(filename):
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -110,38 +41,65 @@ def require_teacher():
         return redirect(url_for("login"))
     return None
 
-def week_range_for(date_obj):
-    # return (monday_date, sunday_date) covering date_obj
-    monday = date_obj - timedelta(days=(date_obj.weekday()))
-    sunday = monday + timedelta(days=6)
-    return monday, sunday
 
-# ---------------- Routes: Public ----------------
+
+def upload_file_to_storage(file_bytes, file_path: str, bucket_name: str = "notefy-files"):
+    
+    try:
+        print("Length of file_bytes in bytes:", len(file_bytes))
+        response = supabase.storage.from_(bucket_name).upload(
+            path=file_path,
+            file=file_bytes,  
+            file_options={"content-type": "application/octet-stream"}
+        )
+        return True
+    except Exception as e:
+        print(f"Storage upload error: {e}")
+        return False
+
+
+
 
 @app.route("/")
 def index():
-    conn = get_db()
-    c = conn.cursor()
-    # show latest files with folder name and teacher name
-    c.execute(
-        """
-        SELECT f.id, f.file_name, f.file_path, f.subject, f.upload_date,
-               t.name AS teacher_name,
-               COALESCE((SELECT name FROM folders WHERE id=f.folder_id), '') AS folder_name
-        FROM files f
-        LEFT JOIN teachers t ON t.id = f.uploader_id
-        ORDER BY f.upload_date DESC
-        """
-    )
-    files = c.fetchall()
-    conn.close()
-    return render_template("index.html", files=files)
+    try:
+        response = supabase.table('files').select('*').order('upload_date', desc=True).execute()
+        files = response.data if response.data else []
+        print("Fetched files:", files)
+        
+        folder_rows = supabase.table('folders').select('id', 'name').execute().data
+        folder_map = {folder['id']: folder['name'] for folder in folder_rows}
+
+
+        for f in files:
+            f['folder_name'] = folder_map.get(f['folder_id'], "Unsorted")
+        print("Fetched files:", files)
+
+        return render_template("index.html", files=files)
+    except Exception as e:
+        flash("Error loading files.")
+        return render_template("index.html", files=[])
 
 @app.route("/upload/<path:filename>")
 def download_file(filename):
-    return send_from_directory(app.config["UPLOAD_FOLDER"], filename, as_attachment=True)
+    bucket_name = "notefy-files"
+    try:
+        
+        file_bytes = supabase.storage.from_(bucket_name).download(filename)
+        if file_bytes is None:
+            flash("File not found in cloud storage.")
+            return redirect(url_for("index"))
+        
+        
+        return Response(
+            file_bytes,
+            mimetype="application/octet-stream",
+            headers={"Content-Disposition": f"attachment;filename={filename.split('/')[-1]}"}
+        )
+    except Exception as e:
+        flash("Error fetching file.")
+        return redirect(url_for("index"))
 
-# ---------------- Auth ----------------
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
@@ -149,20 +107,24 @@ def register():
         name = request.form["name"].strip()
         email = request.form["email"].strip().lower()
         password = request.form["password"]
-        conn = get_db()
-        c = conn.cursor()
+
         try:
-            c.execute(
-                "INSERT INTO teachers (name, email, password) VALUES (?, ?, ?)",
-                (name, email, password),
-            )
-            conn.commit()
+            supabase.table('teachers').insert({
+                'name': name,
+                'email': email,
+                'password': password,
+                'status': 'pending'
+            }).execute()
+            
             flash("Registration submitted. Wait for admin approval.")
-        except sqlite3.IntegrityError:
-            flash("Email already registered.")
-        finally:
-            conn.close()
+        except Exception as e:
+            if "duplicate" in str(e).lower():
+                flash("Email already registered.")
+            else:
+                flash("Registration failed. Please try again.")
+        
         return redirect(url_for("login"))
+    
     return render_template("register.html")
 
 @app.route("/login", methods=["GET", "POST"])
@@ -171,33 +133,28 @@ def login():
         role = request.form.get("role")
         email_or_username = request.form.get("email")
         password = request.form.get("password")
-        conn = get_db()
-        c = conn.cursor()
-        if role == "admin":
-            c.execute(
-                "SELECT * FROM admin WHERE username=? AND password=?",
-                (email_or_username, password),
-            )
-            admin = c.fetchone()
-            if admin:
-                session.clear()
-                session["admin"] = True
-                conn.close()
-                return redirect(url_for("admin_dashboard"))
-        else:
-            c.execute(
-                "SELECT * FROM teachers WHERE email=? AND password=?",
-                (email_or_username, password),
-            )
-            t = c.fetchone()
-            if t and t["status"] == "approved":
-                session.clear()
-                session["teacher_id"] = t["id"]
-                session["teacher_name"] = t["name"]
-                conn.close()
-                return redirect(url_for("teacher_files"))
-        conn.close()
+
+        try:
+            if role == "admin":
+                response = supabase.table('admin').select('*').eq('username', email_or_username).eq('password', password).execute()
+                if response.data:
+                    session.clear()
+                    session["admin"] = True
+                    return redirect(url_for("admin_dashboard"))
+            else:
+                response = supabase.table('teachers').select('*').eq('email', email_or_username).eq('password', password).execute()
+                teacher = response.data[0] if response.data else None
+                
+                if teacher and teacher["status"] == "approved":
+                    session.clear()
+                    session["teacher_id"] = teacher["id"]
+                    session["teacher_name"] = teacher["name"]
+                    return redirect(url_for("teacher_files"))
+        except Exception as e:
+            print(f"Login error: {e}")
+
         flash("Invalid credentials or not approved yet.")
+    
     return render_template("login.html")
 
 @app.route("/logout")
@@ -205,143 +162,151 @@ def logout():
     session.clear()
     return redirect(url_for("index"))
 
-# ---------------- Admin ----------------
-
 @app.route("/admin")
 def admin_dashboard():
     must = require_admin()
     if must:
         return must
-    conn = get_db()
-    c = conn.cursor()
-    c.execute("SELECT * FROM teachers WHERE status='pending'")
-    pending = c.fetchall()
-    conn.close()
-    return render_template("admin.html", teachers=pending)
+
+    try:
+        response = supabase.table('teachers').select('*').eq('status', 'pending').execute()
+        pending = response.data if response.data else []
+        return render_template("admin.html", teachers=pending)
+    except Exception as e:
+        flash("Error loading pending teachers.")
+        return render_template("admin.html", teachers=[])
 
 @app.route("/approve/<int:teacher_id>")
 def approve_teacher(teacher_id):
     must = require_admin()
     if must:
         return must
-    conn = get_db()
-    c = conn.cursor()
-    c.execute("UPDATE teachers SET status='approved' WHERE id=?", (teacher_id,))
-    conn.commit()
-    conn.close()
+
+    try:
+        supabase.table('teachers').update({'status': 'approved'}).eq('id', teacher_id).execute()
+        flash("Teacher approved successfully.")
+    except Exception as e:
+        flash("Error approving teacher.")
+    
     return redirect(url_for("admin_dashboard"))
 
-# Timetable admin CRUD
 @app.route("/admin/timetable", methods=["GET", "POST"])
 def timetable_admin():
     must = require_admin()
     if must:
         return must
-    conn = get_db()
-    c = conn.cursor()
+
     if request.method == "POST":
-        # add new entry
-        day = int(request.form["day_of_week"])  # 0..6
-        title = request.form["title"].strip()
-        start_time = request.form["start_time"]  # HH:MM
-        end_time = request.form["end_time"]
-        teacher = request.form.get("teacher", "").strip()
-        location = request.form.get("location", "").strip()
-        notes = request.form.get("notes", "").strip()
-        c.execute(
-            """
-            INSERT INTO timetable (day_of_week, title, start_time, end_time, teacher, location, notes)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-            """,
-            (day, title, start_time, end_time, teacher, location, notes),
-        )
-        conn.commit()
-        flash("Timetable entry added.")
+        try:
+            data = {
+                'day_of_week': int(request.form["day_of_week"]),
+                'title': request.form["title"].strip(),
+                'start_time': request.form["start_time"],
+                'end_time': request.form["end_time"],
+                'teacher': request.form.get("teacher", "").strip(),
+                'location': request.form.get("location", "").strip(),
+                'notes': request.form.get("notes", "").strip()
+            }
+            
+            supabase.table('timetable').insert(data).execute()
+            flash("Timetable entry added.")
+        except Exception as e:
+            flash("Error adding timetable entry.")
+        
         return redirect(url_for("timetable_admin"))
 
-    c.execute("SELECT * FROM timetable ORDER BY day_of_week, start_time")
-    entries = c.fetchall()
-    conn.close()
-    return render_template("timetable_admin.html", entries=entries)
+    try:
+        response = supabase.table('timetable').select('*').order('day_of_week').order('start_time').execute()
+        entries = response.data if response.data else []
+        return render_template("timetable_admin.html", entries=entries)
+    except Exception as e:
+        flash("Error loading timetable.")
+        return render_template("timetable_admin.html", entries=[])
 
 @app.route("/admin/timetable/delete/<int:entry_id>")
 def timetable_delete(entry_id):
     must = require_admin()
     if must:
         return must
-    conn = get_db()
-    c = conn.cursor()
-    c.execute("DELETE FROM timetable WHERE id=?", (entry_id,))
-    conn.commit()
-    conn.close()
-    flash("Deleted timetable entry.")
-    return redirect(url_for("timetable_admin"))
 
-# ---------------- Timetable public ----------------
+    try:
+        supabase.table('timetable').delete().eq('id', entry_id).execute()
+        flash("Deleted timetable entry.")
+    except Exception as e:
+        flash("Error deleting timetable entry.")
+    
+    return redirect(url_for("timetable_admin"))
 
 @app.route("/timetable")
 def timetable_public():
     today = datetime.now()
     week_start = today - timedelta(days=today.weekday())
-    conn = get_db()
-    c = conn.cursor()
-    c.execute("SELECT * FROM timetable ORDER BY day_of_week, start_time")
-    entries = c.fetchall()
-    conn.close()
 
-    # group by day 0..6
-    week = {i: [] for i in range(7)}
-    for e in entries:
-        week[e["day_of_week"]].append(e)
+    try:
+        response = supabase.table('timetable').select('*').order('day_of_week').order('start_time').execute()
+        entries = response.data if response.data else []
 
-    # dates for header
-    days = []
-    for i in range(7):
-        d = week_start + timedelta(days=i)
-        days.append({"idx": i, "date": d.strftime("%a %d %b"), "iso": d.strftime("%Y-%m-%d")})
+       
+        week = {i: [] for i in range(7)}
+        for e in entries:
+            week[e["day_of_week"]].append(e)
 
-    return render_template("timetable_public.html", week=week, days=days)
+        
+        days = []
+        for i in range(7):
+            d = week_start + timedelta(days=i)
+            days.append({"idx": i, "date": d.strftime("%a %d %b"), "iso": d.strftime("%Y-%m-%d")})
 
-# ---------------- Teacher: folders & files ----------------
+        return render_template("timetable_public.html", week=week, days=days)
+    except Exception as e:
+        flash("Error loading timetable.")
+        return render_template("timetable_public.html", week={i: [] for i in range(7)}, days=[])
 
 @app.route("/teacher/files")
 def teacher_files():
     must = require_teacher()
     if must:
         return must
+
     teacher_id = session["teacher_id"]
-    conn = get_db()
-    c = conn.cursor()
-    c.execute("SELECT * FROM folders WHERE owner_id=? ORDER BY created_at DESC", (teacher_id,))
-    folders = c.fetchall()
-    c.execute(
-        """
-        SELECT f.*, COALESCE((SELECT name FROM folders WHERE id=f.folder_id), '') AS folder_name
-        FROM files f WHERE uploader_id=? ORDER BY upload_date DESC
-        """,
-        (teacher_id,),
-    )
-    files = c.fetchall()
-    conn.close()
-    return render_template("teacher_files.html", folders=folders, files=files)
+
+    try:
+        
+        folders_response = supabase.table('folders').select('*').eq('owner_id', teacher_id).order('created_at', desc=True).execute()
+        folders = folders_response.data if folders_response.data else []
+
+        
+        files_response = supabase.table('files').select('''
+            *,
+            folders:folder_id(name)
+        ''').eq('uploader_id', teacher_id).order('upload_date', desc=True).execute()
+        files = files_response.data if files_response.data else []
+
+        return render_template("teacher_files.html", folders=folders, files=files)
+    except Exception as e:
+        flash("Error loading files and folders.")
+        return render_template("teacher_files.html", folders=[], files=[])
 
 @app.route("/folder/create", methods=["POST"])
 def folder_create():
     must = require_teacher()
     if must:
         return must
+
     name = request.form["name"].strip()
     parent_id = request.form.get("parent_id") or None
     teacher_id = session["teacher_id"]
-    conn = get_db()
-    c = conn.cursor()
-    c.execute(
-        "INSERT INTO folders (name, parent_id, owner_id) VALUES (?, ?, ?)",
-        (name, parent_id, teacher_id),
-    )
-    conn.commit()
-    conn.close()
-    flash("Folder created.")
+
+    try:
+        data = {'name': name, 'owner_id': teacher_id}
+        if parent_id:
+            data['parent_id'] = int(parent_id)
+            
+        supabase.table('folders').insert(data).execute()
+        flash("Folder created.")
+    except Exception as e:
+        flash("Error creating folder.")
+
     return redirect(url_for("teacher_files"))
 
 @app.route("/folder/rename/<int:folder_id>", methods=["POST"])
@@ -349,17 +314,16 @@ def folder_rename(folder_id):
     must = require_teacher()
     if must:
         return must
+
     new_name = request.form["name"].strip()
     teacher_id = session["teacher_id"]
-    conn = get_db()
-    c = conn.cursor()
-    c.execute(
-        "UPDATE folders SET name=? WHERE id=? AND owner_id=?",
-        (new_name, folder_id, teacher_id),
-    )
-    conn.commit()
-    conn.close()
-    flash("Folder renamed.")
+
+    try:
+        supabase.table('folders').update({'name': new_name}).eq('id', folder_id).eq('owner_id', teacher_id).execute()
+        flash("Folder renamed.")
+    except Exception as e:
+        flash("Error renaming folder.")
+
     return redirect(url_for("teacher_files"))
 
 @app.route("/folder/delete/<int:folder_id>")
@@ -367,21 +331,21 @@ def folder_delete(folder_id):
     must = require_teacher()
     if must:
         return must
+
     teacher_id = session["teacher_id"]
-    conn = get_db()
-    c = conn.cursor()
-    # prevent delete if files exist inside
-    c.execute("SELECT COUNT(*) AS cnt FROM files WHERE folder_id=?", (folder_id,))
-    cnt = c.fetchone()[0]
-    if cnt and cnt > 0:
-        conn.close()
-        flash("Folder not empty. Delete files first.")
-        return redirect(url_for("teacher_files"))
-    # allow delete if owned
-    c.execute("DELETE FROM folders WHERE id=? AND owner_id=?", (folder_id, teacher_id))
-    conn.commit()
-    conn.close()
-    flash("Folder deleted.")
+
+    try:
+        
+        files_response = supabase.table('files').select('id').eq('folder_id', folder_id).execute()
+        if files_response.data:
+            flash("Folder not empty. Delete files first.")
+            return redirect(url_for("teacher_files"))
+
+        supabase.table('folders').delete().eq('id', folder_id).eq('owner_id', teacher_id).execute()
+        flash("Folder deleted.")
+    except Exception as e:
+        flash("Error deleting folder.")
+
     return redirect(url_for("teacher_files"))
 
 @app.route("/upload", methods=["GET", "POST"])
@@ -389,78 +353,109 @@ def upload():
     must = require_teacher()
     if must:
         return must
+
     teacher_id = session["teacher_id"]
 
     if request.method == "POST":
         subject = request.form.get("subject", "").strip()
         folder_id = request.form.get("folder_id")
         file = request.files.get("file")
+
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
-            # save in a subfolder path: uploads/<teacher_id>/
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            unique_filename = f"{timestamp}_{filename}"
+            file_path = f"teacher_{teacher_id}/{unique_filename}"
+
+            
+            file_bytes = file.read()
+            file.seek(0)  
+
+                        
             teacher_dir = os.path.join(app.config["UPLOAD_FOLDER"], f"t_{teacher_id}")
             os.makedirs(teacher_dir, exist_ok=True)
-            save_path = os.path.join(teacher_dir, filename)
-            file.save(save_path)
+            local_path = os.path.join(teacher_dir, unique_filename)
+            file.save(local_path)
 
-            # store relative path from uploads/
-            rel_path = os.path.relpath(save_path, app.config["UPLOAD_FOLDER"]).replace(os.sep, '/')
+            
+            storage_success = upload_file_to_storage(file_bytes, file_path)
 
-            conn = get_db()
-            c = conn.cursor()
-            c.execute(
-                "INSERT INTO files (file_name, file_path, uploader_id, folder_id, subject) VALUES (?, ?, ?, ?, ?)",
-                (filename, rel_path, teacher_id, folder_id, subject),
-            )
-            conn.commit()
-            conn.close()
-            flash("File uploaded.")
-            return redirect(url_for("teacher_files"))
+            
+            try:
+                
+                data = {
+                    'file_name': filename,
+                    'file_path': file_path if storage_success else f"t_{teacher_id}/{unique_filename}",
+                    'uploader_id': teacher_id,
+                    'subject': subject
+                }
+                if folder_id:
+                    data['folder_id'] = int(folder_id)
+                    
+                supabase.table('files').insert(data).execute()
+                
+                if storage_success:
+                    flash("File uploaded successfully to cloud storage.")
+                else:
+                    flash("File uploaded locally (cloud storage unavailable).")
+                    
+            except Exception as e:
+                flash("Error saving file information.")
         else:
-            flash("Invalid file type.")
+            flash("Invalid file type or no file selected.")
 
-    # GET: show folders to choose
-    conn = get_db()
-    c = conn.cursor()
-    c.execute("SELECT * FROM folders WHERE owner_id=? ORDER BY name", (teacher_id,))
-    folders = c.fetchall()
-    conn.close()
-    return render_template("upload.html", folders=folders)
+        return redirect(url_for("teacher_files"))
+
+   
+    try:
+        folders_response = supabase.table('folders').select('*').eq('owner_id', teacher_id).order('name').execute()
+        folders = folders_response.data if folders_response.data else []
+        return render_template("upload.html", folders=folders)
+    except Exception as e:
+        return render_template("upload.html", folders=[])
 
 @app.route("/file/delete/<int:file_id>")
 def file_delete(file_id):
     must = require_teacher()
     if must:
         return must
+
     teacher_id = session["teacher_id"]
-    conn = get_db()
-    c = conn.cursor()
-    c.execute(
-        "SELECT file_path FROM files WHERE id=? AND uploader_id=?",
-        (file_id, teacher_id),
-    )
-    row = c.fetchone()
-    if not row:
-        conn.close()
-        flash("File not found or not yours.")
-        return redirect(url_for("teacher_files"))
-    rel_path = row[0]
-    abs_path = os.path.join(app.config["UPLOAD_FOLDER"], rel_path)
-    # delete db row
-    c.execute("DELETE FROM files WHERE id=? AND uploader_id=?", (file_id, teacher_id))
-    conn.commit()
-    conn.close()
-    # try delete file from disk
+
     try:
-        if os.path.exists(abs_path):
-            os.remove(abs_path)
-    except Exception:
-        pass
-    flash("File deleted.")
+        
+        file_response = supabase.table('files').select('*').eq('id', file_id).eq('uploader_id', teacher_id).execute()
+        
+        if not file_response.data:
+            flash("File not found or access denied.")
+            return redirect(url_for("teacher_files"))
+
+        file_info = file_response.data[0]
+        file_path = file_info['file_path']
+
+        
+        supabase.table('files').delete().eq('id', file_id).eq('uploader_id', teacher_id).execute()
+
+        
+        try:
+            supabase.storage.from_('notefy-files').remove([file_path])
+        except Exception:
+            pass  
+
+        
+        try:
+            local_path = os.path.join(app.config["UPLOAD_FOLDER"], file_path)
+            if os.path.exists(local_path):
+                os.remove(local_path)
+        except Exception:
+            pass
+
+        flash("File deleted successfully.")
+    except Exception as e:
+        flash("Error deleting file.")
+
     return redirect(url_for("teacher_files"))
 
 if __name__ == "__main__":
-    import os
     port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
-
+    app.run(host="0.0.0.0", port=port, debug=os.getenv("FLASK_ENV") == "development")
