@@ -116,14 +116,31 @@
 	  animation: fadeIn 1s ease;
 	 
     }
+.cat-container {
+    position: relative;
+    width: 200px; /* match your image size */
+    height: 200px;
+}
+.cat {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: auto;
+    transition: opacity 0.2s ease; 
+}
+
+
+#cat-open { opacity: 1; }
+#cat-closed { opacity: 0; }
   </style>
 </head>
 <body>
-
-  <h1> Welcome to NOTEFY</h1>
-
-  
-
+<center>
+<div class="cat-container">
+    <img src="{{ url_for('static', filename='images/cat-open.png') }}" id="cat-open" class="cat">
+    <img src="{{ url_for('static', filename='images/cat-closed.png') }}" id="cat-closed" class="cat">
+</div>
   <form method="POST">
     <label>Role</label>
     <select name="role">
@@ -135,16 +152,30 @@
     <input name="email" placeholder="Enter your email or username" required>
 
     <label>Password</label>
-    <input type="password" name="password" placeholder="Enter your password" required>
+    <input type="password" name="password" id="password" placeholder="Enter your password" required>
 
     <button type="submit">Login</button>
   </form>
 
- 
+ </center>
 </body>
 <script src="{{ url_for('static',filename='js/dialog.js')}}"></script>
 <script>
 const msgs = {{ get_flashed_messages() | tojson }};
 msgs.forEach(m => { alertCustom(m);});
+
+const passwordInput = document.getElementById('password');
+const catOpen = document.getElementById('cat-open');
+const catClosed = document.getElementById('cat-closed');
+
+passwordInput.addEventListener('focus', () => {
+    catOpen.style.opacity = '0';   
+    catClosed.style.opacity = '1'; 
+});
+
+passwordInput.addEventListener('blur', () => {
+    catOpen.style.opacity = '1';   
+    catClosed.style.opacity = '0'; 
+});
 </script>
 </html>
