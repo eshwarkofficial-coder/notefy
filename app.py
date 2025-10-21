@@ -107,6 +107,9 @@ def register():
         name = request.form["name"].strip()
         email = request.form["email"].strip().lower()
         password = request.form["password"]
+        if not email.endswith('@klesnc.edu.in'):
+            flash("Registration only allowed with @klesnc.edu.in email.")
+            return redirect(url_for("register"))
 
         try:
             supabase.table('teachers').insert({

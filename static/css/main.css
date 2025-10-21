@@ -15,7 +15,7 @@
       color: var(--text);
     }
 
-    /* Header */
+    
     header {
       background: linear-gradient(90deg, var(--blue-1) 5% , var(--blue-2) );
       color: white;
@@ -61,7 +61,7 @@
     
     .folder-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      grid-template-columns:1fr;
       gap: 16px;
     }
     .folder-card {
@@ -97,7 +97,7 @@
       color: var(--accent);
     }
 
-    /* Hidden file list */
+   
     .file-list {
       list-style: none;
       padding: 0;
